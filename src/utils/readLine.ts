@@ -1,6 +1,4 @@
-
-
-export const readline = require('readline');
+import readline from 'readline';
 
 export const rl = readline.createInterface({
     input: process.stdin,
