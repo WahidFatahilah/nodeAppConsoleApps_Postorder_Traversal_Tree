@@ -1,246 +1,448 @@
-import fs from "fs";
-import * as readline from "readline";
-import {Employee} from "./model/Employee";
-import {data} from "./utils/parseJson";
+/*
+interface TreeNode {
+    id: number;
+    name: string;
+    managerId: number | null;
+}
+*/
 
-class EmployeeNode {
-    constructor(public employee: Employee, public children: EmployeeNode[] = []) {}
-
-    addChild(node: EmployeeNode) {
-        this.children.push(node);
+const jsonData = [
+    {
+        "id": 1,
+        "name": "raelynn",
+        "managerId": null
+    },
+    {
+        "id": 2,
+        "name": "darin",
+        "managerId": 1
+    },
+    {
+        "id": 3,
+        "name": "kacie",
+        "managerId": 1
+    },
+    {
+        "id": 4,
+        "name": "jordana",
+        "managerId": 2
+    },
+    {
+        "id": 5,
+        "name": "everett",
+        "managerId": 2
+    },
+    {
+        "id": 6,
+        "name": "bertha",
+        "managerId": 2
+    },
+    {
+        "id": 7,
+        "name": "peg",
+        "managerId": 3
+    },
+    {
+        "id": 8,
+        "name": "hugh",
+        "managerId": 3
+    },
+    {
+        "id": 9,
+        "name": "eveleen",
+        "managerId": 3
+    },
+    {
+        "id": 10,
+        "name": "evelina",
+        "managerId": 9
     }
+];
+
+class Employee {
+    id: number;
+    name: string;
+    managerId: number | null;
+
+    constructor(id: number, name: string, managerId: number | null) {
+        this.id = id;
+        this.name = name;
+        this.managerId = managerId;
+    }
+
+}
+class EmployeeRetrieve {
+    employeeWithRootPosition: string | null = null;
+    employeeDontHaveHierarchy: string | null = null;
+    storeManagerUpToRoot: string[] = [];
+    parentsNodeData: string[] = [];
+
 }
 
-class EmployeeTree {
-    private employeeMap: Map<number, EmployeeNode>;
-    private employeeFinder: EmployeeFinder;
+const employeeRetrieve = new EmployeeRetrieve();
 
-    constructor(private listEmployees: Employee[]) {
-        this.employeeMap = new Map();
-        this.employeeFinder = new EmployeeFinder(listEmployees, this); // Pass 'this' reference
-        this.preorderTraversal();
+class OrganizationTree {
+    employees: Employee[];
+
+    constructor(employees: Employee[]) {
+        this.employees = employees;
     }
 
-    private preorderTraversal(): void {
-        const rootEmployees = this.listEmployees.filter(employee => employee.managerId === null);
-
-        for (const rootEmployee of rootEmployees) {
-            const rootNode = this.preorderTraversalRecursive(rootEmployee);
-            if (rootNode) {
-                this.employeeMap.set(rootEmployee.id, rootNode);
+    preOrderTraversal(nodeId: number | null, targetName: string | null, managerHierarchy: string[] = []) {
+        for (const node of this.employees) {
+            if (node.managerId === nodeId) {
+                console.log(node.name);
+                if (node.name === targetName) {
+                    this.storeDataForTargetName(node, managerHierarchy);
+                }
+                this.preOrderTraversal(node.id, targetName, [...managerHierarchy, node.name]);
             }
         }
     }
 
-    private preorderTraversalRecursive(employee: Employee): EmployeeNode | null {
-        const employeeNode = new EmployeeNode(employee);
-        const directReports = this.listEmployees.filter(e => e.managerId === employee.id);
+    storeDataForTargetName(node: Employee, managerHierarchy: string[]) {
+        this.storeRootHierarchyData(node);
+        this.storeEmployeedDontHaveHierarchyData(node);
+        this.storeManagerUpToRoot(managerHierarchy);
+        this.storeManagerName(managerHierarchy);
+    }
 
-        for (const directReport of directReports) {
-            const childNode = this.preorderTraversalRecursive(directReport);
-            if (childNode) {
-                employeeNode.addChild(childNode);
+    storeRootHierarchyData(node: Employee) {
+        if (node.id === 1) {
+            employeeRetrieve.employeeWithRootPosition = node.name;
+        }
+    }
+
+    storeEmployeedDontHaveHierarchyData(node: Employee) {
+        if (node.managerId === null && node.id !== 1) {
+            employeeRetrieve.employeeDontHaveHierarchy = node.name;
+        }
+    }
+
+    storeManagerUpToRoot(managerHierarchy: string[]) {
+        if (managerHierarchy.length > 0) {
+            for (let i = managerHierarchy.length - 1; i >= 0; i--) {
+                employeeRetrieve.storeManagerUpToRoot.push(managerHierarchy[i]);
             }
         }
-
-        return employeeNode;
     }
 
+    storeManagerName(managerHierarchy: string[]) {
+        const topManagerName = managerHierarchy[managerHierarchy.length - 1];
+        employeeRetrieve.parentsNodeData.push(topManagerName);
+    }
+}
+
+const organizationTree = new OrganizationTree(jsonData);
+
+console.log("preOrderedData:");
+organizationTree.preOrderTraversal(null, null); // Mengakses semua data
+
+const targetName = "raelynn";
+console.log("Searching for:", targetName);
+organizationTree.preOrderTraversal(null, targetName); // Mengakses data "linton"
+
+console.log("--------------------------------------------------------");
+
+console.log("Employee With Root Position:", employeeRetrieve.employeeWithRootPosition);
+console.log("Employee Without Hierarchy:", employeeRetrieve.employeeDontHaveHierarchy);
+console.log("Stored Manager Up To Root:", employeeRetrieve.storeManagerUpToRoot);
+console.log("Parents Node Data:", employeeRetrieve.parentsNodeData);
+
+/*
+
+let parentsNodeData: string[] = [];
 
 
+class OrganizationTree {
+    employees: Employee[];
 
-    printHierarchy(): void {
-        const rootNodes = this.getRootNodes();
-        for (const rootNode of rootNodes) {
-            this.printSubHierarchy(rootNode, '');
-        }
+    constructor(employees: Employee[]) {
+        this.employees = employees;
     }
 
-    private printSubHierarchy(node: EmployeeNode, indent: string): void {
-        console.log(`${indent}${node.employee.name}`);
-        for (const childNode of node.children) {
-            this.printSubHierarchy(childNode, `${indent}    `);
-        }
-    }
+    preOrderTraversal(nodeId: number | null, targetName: string | null, managerHierarchy: string[] = []) {
 
-    getRootNodes(): EmployeeNode[] {
-        return Array.from(this.employeeMap.values()).filter(node => node.employee.managerId === null);
-    }
+        for (const node of this.employees) {
+            if (node.managerId === nodeId) {
+                //console.log(node.name);
 
-    getEmployeeFinder(): EmployeeFinder {
-        return this.employeeFinder;
-    }
+                if (node.name === targetName) {
+                    this.storeDataForTargetName(node, managerHierarchy);
 
-    getManagersUpToRoot(employee: Employee): string[] {
-        const managerNames: string[] = [];
-        let currentEmployee: Employee | null = employee;
+                }
 
-        while (currentEmployee !== null && currentEmployee.managerId !== null) {
-            const manager = this.employeeFinder.findEmployeeById(currentEmployee.managerId);
-            if (manager) {
-                managerNames.push(manager.name);
-                currentEmployee = manager;
-            } else {
-                currentEmployee = null;
+                this.preOrderTraversal(node.id, targetName, [...managerHierarchy, node.name]);
             }
         }
-
-        return managerNames.reverse();
-    }
-}
-
-
-class EmployeeFinder {
-    constructor(private listEmployees: Employee[], private employeeTree: EmployeeTree) {}
-
-    findEmployeeByName(name: string): Employee | undefined {
-        return this.listEmployees.find(employee => employee.name.toLowerCase() === name.toLowerCase());
     }
 
-    findEmployeeById(id: number): Employee | undefined {
-        return this.listEmployees.find(employee => employee.id === id);
+    storeDataForTargetName(node: Employee, managerHierarchy: string[]) {
+        this.storeRootHierarchyData(node);
+        this.storeEmployeedDontHaveHierarchyData(node);
+        this.storeManagerUpToRoot(managerHierarchy);
+        this.storeManagerName(managerHierarchy);
     }
 
-    findIsEmployeeDontHaveHierarchy(employee: Employee): boolean {
-        return employee.managerId === null && employee.id !== 1;
-    }
-
-    findEmployeesWithMultipleManagers(name: string): Employee[] {
-        const employees = this.listEmployees.filter(employee => employee.name.toLowerCase() === name.toLowerCase());
-        const groupBy = employees.reduce((acc: { [id: number]: Employee[] }, employee) => {
-            acc[employee.id] = acc[employee.id] || [];
-            acc[employee.id].push(employee);
-            return acc;
-        }, {});
-        return Object.values(groupBy).filter(group => group.length > 1).flat();
-    }
-
-}
-
-
-interface EmployeeSearch {
-    search(employeeName: string): string;
-}
-
-class EmployeeSearchRoot implements EmployeeSearch {
-    constructor(private employeeFinder: EmployeeFinder) {}
-
-    search(employeeName: string): string {
-        const foundEmployee = this.employeeFinder.findEmployeeByName(employeeName);
-        if (foundEmployee && foundEmployee.id === 1 && foundEmployee.managerId === null) {
-            return `Employee ${foundEmployee.name} is a root tree hierarchy.`;
-        }
-        return '';
-    }
-}
-
-class EmployeeSearchNotFound implements EmployeeSearch {
-    constructor(private employeeFinder: EmployeeFinder) {}
-
-    search(employeeName: string): string {
-        const foundEmployee = this.employeeFinder.findEmployeeByName(employeeName);
-        if (foundEmployee) {
-            return `Search result: ${foundEmployee.name}`;
-        }
-        return `${employeeName} not found`;
-    }
-}
-
-class EmployeeSearchDuplicateManager implements EmployeeSearch {
-    constructor(private employeeFinder: EmployeeFinder) {}
-
-    search(employeeName: string): string {
-        const employeesWithSameName = this.employeeFinder.findEmployeesWithMultipleManagers(employeeName);
-        if (employeesWithSameName.length > 0) {
-            const managers = employeesWithSameName.map(employee => {
-                const managerName = this.employeeFinder.findEmployeeById(employee.managerId || -1)?.name;
-                return managerName !== employeeName ? managerName : null;
-            }).filter(Boolean);
-
-            if (managers.length > 0) {
-                return `Employee ${employeeName} has multiple managers: ${managers.join(', ')}`;
-            } else {
-                return `Employee ${employeeName} has no duplicate managers.`;
-            }
-        } else {
-            return '';
+    storeRootHierarchyData(node: Employee) {
+        if (node.id === 1) {
+            console.log("Adalah root hierarchy");
         }
     }
-}
 
-class EmployeeSearchWithoutHierarchy implements EmployeeSearch {
-    constructor(private employeeFinder: EmployeeFinder) {}
+    storeEmployeedDontHaveHierarchyData(node: Employee) {
+        if (node.managerId === null && node.id !== 1) {
+            console.log("Employee Tidak memiliki hierarchy");
+        }
+    }
 
-    search(employeeName: string): string {
-        const foundEmployee = this.employeeFinder.findEmployeeByName(employeeName);
-        if (foundEmployee) {
-            if (this.employeeFinder.findIsEmployeeDontHaveHierarchy(foundEmployee)) {
-                return `Employee ${foundEmployee.name} does not have a hierarchy.\n` +
-                    `Employee ${foundEmployee.name} does not have any direct report, need to have a manager`;
+    storeManagerUpToRoot(managerHierarchy: string[]) {
+        if (managerHierarchy.length > 0) {
+            console.log("Hierarki Managers Up To Root");
+            for (let i = managerHierarchy.length - 1; i >= 0; i--) {
+                console.log(managerHierarchy[i]);
             }
         }
-        return '';
     }
+
+    storeManagerName(managerHierarchy: string[]) {
+        const topManagerName = managerHierarchy[managerHierarchy.length - 1];
+        parentsNodeData.push(topManagerName);
+        console.log("Manager (Parent Node) :", topManagerName);
+    }
+
 }
 
-/*class EmployeeSearchWithManagers implements EmployeeSearch {
-    constructor(private employeeFinder: EmployeeFinder) {}
+const organizationTree = new OrganizationTree(jsonData);
 
-    search(employeeName: string): string {
-        const foundEmployee = this.employeeFinder.findEmployeeByName(employeeName);
-        if (foundEmployee) {
-            const managerNames = this.employeeFinder.getManagersUpToRoot(foundEmployee);
-            if (managerNames.length > 0) {
-                return `Employee ${foundEmployee.name} has managers up to root: ${managerNames.join(', ')}`;
-            } else {
-                return `Employee ${foundEmployee.name} has no managers up to root.`;
+console.log("preOrderedData:");
+organizationTree.preOrderTraversal(null, null); // Mengakses semua data
+
+const targetName = "linton";
+console.log("Searching for:", targetName);
+organizationTree.preOrderTraversal(null, targetName); // Mengakses data "linton"
+
+*/
+
+
+
+/*
+// Mengakses dan mencetak semua nama manager dalam array
+console.log("Managers Duplicate:");
+for (const manager of managersDuplicate) {
+    console.log(manager);
+}
+
+// Menghitung jumlah nama manager dalam array
+const totalManagers = managersDuplicate.length;
+console.log("Total Managers Duplicate:", totalManagers);
+
+
+
+*/
+
+
+/*
+let duplicateEmployee = 0
+let managersDuplicate: string[] = [];
+function preOrderTraversal(nodeId: number | null, targetName: string | null, managerHierarchy: string[] = []): void {
+    for (const node of jsonData) {
+
+        if (node.managerId === nodeId) {
+            console.log(node.name);
+
+            if (node.name === targetName) {
+
+                duplicateEmployee++
+                // saya ingin push node ini ke daftar data ditemukan
+                console.log("Data Ditemukan");
+                // saya ingin push node ini ke daftar karyawaan root
+                if(node.id === 1){
+                    console.log("Adalah root hierarchy");
+                }
+                // saya ingin push node ini ke daftar karyawan tidak memiliki hierarchy
+                if(node.managerId === null && node.id !== 1){
+                    console.log("Employee Tidak memiliki hierarchy");
+                }
+
+                if (managerHierarchy.length > 0) {
+                    console.log("Hierarki Pengelola hingga ke akar pohon:");
+                    for (let i = managerHierarchy.length - 1; i >= 0; i--) {
+                        const managerName = managerHierarchy[i];
+                        console.log(managerName);
+                    }
+                }
+
+                if(duplicateEmployee>= 1){
+                    const topManagerName = managerHierarchy[managerHierarchy.length - 1];
+                    managersDuplicate.push(topManagerName); // Menambahkan nama manager ke dalam array managersDuplicate
+                    console.log("Nama Manager Teratas :", topManagerName);
+                }
+
             }
+
+            preOrderTraversal(node.id, targetName, [...managerHierarchy, node.name]);
         }
-        return `${employeeName} not found`;
     }
-}*/
+}
+console.log("preOrderedData:");
+preOrderTraversal(null, null); // Mengakses semua data
 
-// Main function
-function main() {
-    const rawData = fs.readFileSync('src/assets/3.json', 'utf-8');
-    const data: Employee[] = JSON.parse(rawData);
+const targetName = "linton";
+console.log("Searching for:", targetName);
+preOrderTraversal(null, targetName); // Mengakses data "evelina"
 
-    const employeeTree = new EmployeeTree(data);
-    const employeeFinder = employeeTree.getEmployeeFinder();
-
-    const searchRoot = new EmployeeSearchRoot(employeeFinder);
-    const searchNotFound = new EmployeeSearchNotFound(employeeFinder);
-    const searchDuplicateManager = new EmployeeSearchDuplicateManager(employeeFinder);
-    const searchWithoutHierarchy = new EmployeeSearchWithoutHierarchy(employeeFinder);
-    //const searchWithManagers = new EmployeeSearchWithManagers(employeeFinder);
-
-    const rl = readline.createInterface({
-        input: process.stdin,
-        output: process.stdout
-    });
-
-    // Print the hierarchy
-    console.log('\nEmployee Hierarchy:');
-    employeeTree.printHierarchy();
-
-
-    rl.question("Enter an employee name : ", (name) => {
-
-        const resultRoot = searchRoot.search(name);
-        const resultNotFound = searchNotFound.search(name);
-        const resultDuplicateManager = searchDuplicateManager.search(name);
-        const resultWithoutHierarchy = searchWithoutHierarchy.search(name);
-
-       // const resultWithManagers = searchWithManagers.search(name); // Add this line
-        const results = [resultRoot, resultNotFound, resultDuplicateManager, resultWithoutHierarchy].filter(Boolean);
-
-        if (results.length > 0) {
-            console.log(results.join('\n'));
-        } else {
-            console.log('No matching results found.');
-        }
-        rl.close();
-    });
+// Mengakses dan mencetak semua nama manager dalam array
+console.log("Managers Duplicate:");
+for (const manager of managersDuplicate) {
+    console.log(manager);
 }
 
-main()
+// Menghitung jumlah nama manager dalam array
+const totalManagers = managersDuplicate.length;
+console.log("Total Managers Duplicate:", totalManagers);*/
+
+/*
+
+function inOrderTraversal(nodeId: number | null, result: TreeNode[] = []): TreeNode[] {
+    for (const node of jsonData) {
+        if (node.managerId === nodeId) {
+            inOrderTraversal(node.id, result);
+            result.push(node);
+        }
+    }
+    return result;
+}
+
+const inOrderedData: TreeNode[] = inOrderTraversal(null);
+console.log(inOrderedData);
+
+*/
+
+/*
+function postOrderTraversal(nodeId: number | null): void {
+    for (const node of jsonData) {
+        if (node.managerId === nodeId) {
+            postOrderTraversal(node.id); // Rekursi untuk mengunjungi child nodes (subtree)
+            console.log(node.name); // Cetak current node setelah mengunjungi child nodes
+        }
+    }
+}
+
+console.log("postOrderedData:");
+postOrderTraversal(null); // Memulai traversing dari root (null)
+*/
+
+
+
+/*
+//Pre order traversal accepted
+function preOrderTraversal(nodeId: number | null, result: TreeNode[] = []): TreeNode[] {
+    for (const node of jsonData) {
+        if (node.managerId === nodeId) {
+            result.push(node);
+            preOrderTraversal(node.id, result);
+        }
+    }
+    return result;
+}
+
+console.log("preOrderedData")
+const preOrderedData: TreeNode[] = preOrderTraversal(null);
+console.log(preOrderedData);
+
+*/
+
+
+
+
+
+/*
+
+let duplicateEmployee = 0; // Inisialisasi variabel di luar fungsi
+let managerNames: string[] = []; // Array untuk menyimpan nama manager
+
+function findEmployeeAndTraverse(nameToFind: string, nodeId: number | null = null, level: number = 0, managerUpToRoot: string[] = [], siblings: string[] = []) {
+
+    for (const node of jsonData) {
+
+        if ( (node.managerId === nodeId) || (node.managerId === null && nodeId === null)) {
+
+            if (node.name === nameToFind) {
+                duplicateEmployee++;
+
+                // Found Message
+                console.log("  ".repeat(level) + node.name + " detected");
+
+                // Search Employee Hierarchy
+                if (node.id === 1) {
+                    console.log(node.name + " Is root Employee");
+                }
+
+                if (node.managerId === null && nodeId != 1) {
+                    console.log(node.name + " Don't have hierarchy");
+                }
+
+                if (managerUpToRoot.length > 0) {
+                    const reversedManagers = managerUpToRoot.slice().reverse();
+                    console.log("Managers up to root are: " + reversedManagers.join(", "));
+                    managerNames.push(reversedManagers[0]);
+                }
+
+            }
+
+            findEmployeeAndTraverse(nameToFind, node.id, level + 1, [...managerUpToRoot, node.name], siblings);
+
+
+
+        }
+    }
+}
+
+// Example: calling the function and checking duplicateEmployee
+
+findEmployeeAndTraverse("linton");
+console.log("Duplicate Employee count: " + duplicateEmployee);
+console.log("Manager Names: " + managerNames.join(", "));
+
+*/
+
+/*
+
+function findEmployeeAndTraverse(nameToFind: string, nodeId: number | null = null, level: number = 0, managerNames: string[] = []) {
+    for (const node of jsonData) {
+        if ((node.managerId === nodeId) || (node.managerId === null && nodeId === null)) {
+
+            if (node.name === nameToFind) {
+                console.log("  ".repeat(level) + node.name + " ketemu");
+                if (managerNames.length > 0) {
+                    console.log("Managers up to root adalah: " + managerNames.join(", "));
+                }
+                return;
+            }
+
+
+
+            findEmployeeAndTraverse(nameToFind, node.id, level + 1, [...managerNames, node.name]);
+        }
+    }
+}
+
+// Mencari "Evelina" dan menampilkan hasil
+findEmployeeAndTraverse("peg");
+
+*/
+
+/*
+function buildTreeAndTraverse(nodeId: number | null = null, level: number = 0) {
+    for (const node of jsonData) {
+        if ((node.managerId === nodeId) || (node.managerId === null && nodeId === null)) {
+            console.log("  ".repeat(level) + node.name);
+            buildTreeAndTraverse(node.id, level + 1);
+        }
+    }
+}
+
+// Membangun pohon dan melakukan pre-order traversal
+buildTreeAndTraverse()
+*/
