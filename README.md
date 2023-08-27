@@ -1,5 +1,5 @@
 # NodeAppConsole
-Preorder Traversal Employee Tree Console App
+Post Order Traversal Employee Tree Console App
 Welcome to the Preorder Traversal Employee Tree Console App repository! 
 
 This project showcases a Node.js console application that implements a preorder traversal algorithm on an employee tree structure. The application is designed to process employee data stored in JSON format and perform various operations on the hierarchical employee data.
