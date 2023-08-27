@@ -30,7 +30,7 @@ export class EmployeeTree {
     }
 
 
-    //At each iteration the data will be processed and entered into the data retrieve
+    //At each iteration the data will be processed and inserted into the data retrieve
     storeDataForTargetName(node: Employee, managerHierarchy: string[]) {
         // Store information about the found employee
         this.storeEmployeeFound(node);

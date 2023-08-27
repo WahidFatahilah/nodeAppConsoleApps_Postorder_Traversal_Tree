@@ -60,7 +60,7 @@ export class mainCoreApp {
         const filePath: string = `src/assets/${selectedFileName}`;
         try {
             const data: any[] = readAndParseJsonFile(filePath);
-            const organizationTree = new EmployeeTree(data);
+            const hierarchyTree = new EmployeeTree(data);
 
 
             this.rl.question('Enter the employee name: ', (searchEmployeeName: string) => {
@@ -68,7 +68,7 @@ export class mainCoreApp {
                 console.log('|~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~|');
                 console.log("|      Result Using the Post Order Traversal Tree Algorithm:   |");
                 process.stdout.write( "|");
-                organizationTree.postOrderTraversal(null, searchEmployeeName); // Traverse And search employee name data
+                hierarchyTree.postOrderTraversal(null, searchEmployeeName); // Traverse And search employee name data
                 this.showResults(searchEmployeeName, employeeData); // Call method and show result
                 console.log('|------------------------------------------|');
                 console.log('|  Search is finished, have a nice day :)  |');
