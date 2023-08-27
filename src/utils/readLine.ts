@@ -1,3 +1,4 @@
+// @ts-ignore
 import readline from 'src/old/utils/readLine';
 
 export const rl = readline.createInterface({

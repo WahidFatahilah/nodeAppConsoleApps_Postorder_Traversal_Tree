@@ -1,6 +1,4 @@
-
-
-export class Employee {
+export  class Employee {
     id: number;
     name: string;
     managerId: number | null;
@@ -10,4 +8,5 @@ export class Employee {
         this.name = name;
         this.managerId = managerId;
     }
+
 }

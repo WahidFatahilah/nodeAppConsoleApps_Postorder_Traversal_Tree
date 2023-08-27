@@ -1,57 +1,33 @@
-import { ResultRootEmployee } from '../../../src/old/Employee/ResultRootEmployee'; // Check the path here
-import { EmployeeRetriever } from '../../../src/old/Tree/EmployeeRetrieve';
-import {EmployeeTree} from "../../../src/old/Tree/EmployeeTree"; // Check the path here
+// @ts-ignore
+
+import {ResultRootEmployee} from "../../../src/Employee/ResultRootEmployee";
 
 describe('ResultRootEmployee', () => {
-    const testData = [
-        {
-            "id": 1,
-            "name": "raelynn",
-            "managerId": null
-        },
-        {
-            "id": 2,
-            "name": "darin",
-            "managerId": 1
-        },
-        {
-            "id": 3,
-            "name": "kacie",
-            "managerId": 1
-        },
-        {
-            "id": 4,
-            "name": "jordana",
-            "managerId": 2
-        },
-        {
-            "id": 5,
-            "name": "everett",
-            "managerId": 2
-        },
-        {
-            "id": 6,
-            "name": "bertha",
-            "managerId": 2
-        }
-    ];
+    it('should return " - Is Root Employee" when employee is root', () => {
+        const employeeRetrieve = {
+            employeeFound: 'raelynn',
+            employeeWithRootPosition: 'raelynn',
+            employeeDontHaveHierarchy: null,
+            storeManagerUpToRoot: [],
+            parentsNodeData: []
+        };
 
-    // Create an instance of EmployeeTree (you may need to provide real data or mock data)
-    const employeeTree = new EmployeeTree(testData);
-
-    // Create an instance of EmployeeRetriever using testData and employeeTree
-    const employeeRetriever = new EmployeeRetriever(testData, employeeTree);
-
-    // Create an instance of ResultRootEmployee using employeeRetriever
-    const resultRootEmployee = new ResultRootEmployee(employeeRetriever);
-
-    it('should show root hierarchy message for employee "raelynn"', () => {
-        const result = resultRootEmployee.showResult('raelynn');
-        expect(result).toBe('- Employee raelynn is a root tree hierarchy.');
+        const showResultRootEmployee = new ResultRootEmployee(employeeRetrieve);
+        const result = showResultRootEmployee.showResultRootEmployee();
+        expect(result).toBe(' - Is Root Employee');
     });
 
-    it('should not show root hierarchy message for other employees', () => {
-        const result = resultRootEmployee.showResult('darin'); // Assuming darin is not a root
-        expect(result).toBe('');
+    it('should return an message when employee is not root', () => {
+        const employeeRetrieve = {
+            employeeFound: 'andrew',
+            employeeWithRootPosition: null,
+            employeeDontHaveHierarchy: null,
+            storeManagerUpToRoot: [],
+            parentsNodeData: []
+        };
+
+        const showResultRootEmployee = new ResultRootEmployee(employeeRetrieve);
+        const result = showResultRootEmployee.showResultRootEmployee();
+        expect(result).toBe(' - Not Root Employee');
     });
 });

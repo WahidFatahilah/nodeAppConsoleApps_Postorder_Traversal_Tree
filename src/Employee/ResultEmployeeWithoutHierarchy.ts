@@ -1,18 +1,19 @@
-import {EmployeeRetriever} from "../Tree/EmployeeRetrieve";
-import {EmployeeSearch} from "./EmployeeSearch";
+import {EmployeeRetrieve} from "../Tree/EmployeeRetrieve";
 
-export class ResultEmployeeWithoutHierarchy implements EmployeeSearch {
-    constructor(private EmployeeRetriever: EmployeeRetriever) {}
+export class ResultEmployeeWithoutHierarchy {
+    constructor(private employee: EmployeeRetrieve) {}
 
-    showResult(employeeName: string): string {
-        const foundEmployee = this.EmployeeRetriever.findEmployeeByName(employeeName);
-        if (foundEmployee) {
-            if (this.EmployeeRetriever.findIsEmployeeDontHaveHierarchy(foundEmployee)) {
-                return `- Employee ${foundEmployee.name} does not have a hierarchy.\n` +
-                    `- Employee ${foundEmployee.name} does not have any direct report, need to have a manager`;
-            }
+    showResultEmployeeWithoutHierarchy(): string | null {
+        // When employeeFound have null value
+        if (this.employee.employeeFound === null) {
+            return "";
         }
-        return '';
+
+        // When employeeFound have value
+        return this.employee.employeeDontHaveHierarchy === null
+            ? " - Employee have hierarchy"
+            : " - Employee dont have hierarchy" +
+            "\n - Employee need to have managers";
     }
 
 }

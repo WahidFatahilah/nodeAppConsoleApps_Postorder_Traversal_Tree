@@ -1,16 +1,19 @@
 import readline from "readline";
 import {files} from "../utils/listJson";
-import {EmployeeTree} from "../Tree/EmployeeTree";
-import {Employee} from "../model/Employee";
-import {ResultRootEmployee} from "../Employee/ResultRootEmployee";
-import {ResultSearchNotFound} from "../Employee/ResultSearchNotFound";
-import {ResultDuplicateManager} from "../Employee/ResultDuplicateManager";
-import {ResultEmployeeWithoutHierarchy} from "../Employee/ResultEmployeeWithoutHierarchy";
-import {EmployeeRetriever} from "../Tree/EmployeeRetrieve";
 import {readAndParseJsonFile} from "../utils/readAndParseJson";
-import {ResultSiblings} from "../Employee/ResultEmployeeSiblings";
+import {EmployeeTree} from "../Tree/EmployeeTree";
+import {ResultEmployeeNotFound} from "../Employee/ResultEmployeeNotFound";
+import {ResultEmployeeWithoutHierarchy} from "../Employee/ResultEmployeeWithoutHierarchy";
+import {ResultEmployeeManagerUpToRoot} from "../Employee/ResultEmployeeManagerUpToRoot";
+import {ResultParentNode} from "../Employee/ResultParentNode";
+import {ResultEmployeeWithDuplicateManagers} from "../Employee/ResultEmployeeWithDuplicateManagers";
+import {ResultRootEmployee} from "../Employee/ResultRootEmployee";
+import {EmployeeRetrieve} from "../Tree/EmployeeRetrieve";
+import {employeeData} from "../Tree/EmployeeData";
 
-export class MainCoreApp {
+
+export class mainCoreApp {
+
     private rl: readline.Interface;
 
     constructor() {
@@ -21,6 +24,8 @@ export class MainCoreApp {
     }
 
     public start(): void {
+
+        this.showWelcomeMessage();
         this.showListOfJsonAssets();
         this.rl.question('Enter the number of the file: ', (input: string) => {
             const selectedFileIndex: number = parseInt(input) - 1;
@@ -35,6 +40,12 @@ export class MainCoreApp {
         });
     }
 
+    private showWelcomeMessage(): void {
+        console.log('|------------------------------------------------|');
+        console.log('|    Welcome to Pre Order Traversal Project      |');
+        console.log('|       Develop by Wahid F - Made With 💙        |');
+    }
+
     private showListOfJsonAssets(): void {
         console.log('|------------------------------------------------|');
         console.log('|     Choose a JSON file (using num 0 - 9  ):    |');
@@ -44,87 +55,54 @@ export class MainCoreApp {
         });
     }
 
-    private processEmployeeTree(employeeTree: EmployeeTree): void {
-        console.log('\nEmployee Hierarchy:');
-        employeeTree.printHierarchy();
-
-        const totalLeafNodes = employeeTree.calculateLeafNodes();
-        console.log(`Total Leaf Nodes: ${totalLeafNodes}`);
-
-        const maxTreeDepth = employeeTree.calculateMaxTreeDepth();
-        console.log(`Max Depth: ${maxTreeDepth}`);
-    }
-
+    // @ts-ignore
     private readSelectedFile(selectedFileName: string): void {
         const filePath: string = `src/assets/${selectedFileName}`;
         try {
-
             const data: any[] = readAndParseJsonFile(filePath);
-            const employeeTree = new EmployeeTree(data);
-            const employeeRetriever = employeeTree.getEmployeeRetriever();
+            const organizationTree = new EmployeeTree(data);
 
-            console.clear();
-            this.processEmployeeTree(employeeTree);
 
-            //Readline input query search of employee name
-            this.rl.question('Enter an employee name: ', (name: string) => {
-                const foundEmployee: Employee | undefined = employeeRetriever.findEmployeeByName(name);
-                this.displayResults(foundEmployee, employeeTree);
-
-                const searchResults = this.searchResultEmployee(name, employeeRetriever);
-
-                if (searchResults.length > 0) {
-                    console.log(searchResults.join('\n'));
-                } else {
-                    console.log('No matching results found.');
-                }
+            this.rl.question('Enter the employee name: ', (searchEmployeeName: string) => {
+                console.clear()
+                console.log('|~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~|');
+                console.log("|      Result Using the Post Order Traversal Tree Algorithm:   |");
+                process.stdout.write( "|");
+                organizationTree.postOrderTraversal(null, searchEmployeeName); // Traverse And search employee name data
+                this.showResults(searchEmployeeName, employeeData); // Call method and show result
                 console.log('|------------------------------------------|');
                 console.log('|  Search is finished, have a nice day :)  |');
                 console.log('|------------------------------------------|');
                 this.rl.close();
             });
-        } catch (error) {
-            // @ts-ignore
-            console.error('Error reading or parsing the JSON file:', error.message);
+        }catch (e) {
+            console.log('|------------------------------------------|');
+            console.log('|     Error When Read And Parse Json  :(   |');
+            console.log('|------------------------------------------|');
             this.rl.close();
         }
     }
+    private showResults(targetName: string, employeeRetrieve: EmployeeRetrieve): void {
+        process.stdout.write("| \n");
+        console.log('|~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~|');
+        console.log("Fun Fact About " + targetName);
 
+        const showResultEmployeeNotFound = new ResultEmployeeNotFound(employeeRetrieve);
+        console.log(showResultEmployeeNotFound.showResultEmployeeNotFound());
 
+        const showResultRootEmployee = new ResultRootEmployee(employeeRetrieve);
+        console.log(showResultRootEmployee.showResultRootEmployee());
 
-    private searchResultEmployee(name: string, employeeRetriever: EmployeeRetriever): string[] {
-        const searchResults: string[] = [];
-        const searches = [
-            new ResultRootEmployee(employeeRetriever),
-            new ResultSearchNotFound(employeeRetriever),
-            new ResultDuplicateManager(employeeRetriever),
-            new ResultEmployeeWithoutHierarchy(employeeRetriever),
-            new ResultSiblings(employeeRetriever)
-        ];
+        const showResultEmployeeWithoutHierarchy = new ResultEmployeeWithoutHierarchy(employeeRetrieve);
+        console.log(showResultEmployeeWithoutHierarchy.showResultEmployeeWithoutHierarchy());
 
-        for (const search of searches) {
-            const result = search.showResult(name);
-            if (result) {
-                searchResults.push(result);
-            }
-        }
-        return searchResults;
-    }
+        const showManagersUpToRoot = new ResultEmployeeManagerUpToRoot(employeeRetrieve);
+        console.log(showManagersUpToRoot.ResultEmployeeManagerUpToRoot());
 
-    private displayResults(foundEmployee: Employee | undefined, employeeTree: EmployeeTree): void {
-        if (foundEmployee) {
-            const managersUpToRoot: string[] = employeeTree.getParentsUpToRoot(foundEmployee);
-            console.log('|------------------------------------------|');
-            console.log('Results:');
-            console.log(`Fun fact about ${foundEmployee.name}`);
+        const showParentEmployee = new ResultParentNode(employeeRetrieve);
+        console.log(showParentEmployee.showResultParentNode());
 
-            if (managersUpToRoot.length > 0) {
-                console.log(`- Managers up to root: ${managersUpToRoot.join(', ')}`);
-            } else {
-                console.log("- This employee has no Managers up to root");
-            }
-        } else {
-            console.log('- Employee not found.');
-        }
+        const showEmployeeWithDuplicateManagers = new ResultEmployeeWithDuplicateManagers(employeeRetrieve);
+        console.log(showEmployeeWithDuplicateManagers.showResultEmployeeWithDuplicateManagers());
     }
 }

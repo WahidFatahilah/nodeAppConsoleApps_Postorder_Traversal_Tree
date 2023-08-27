@@ -1,146 +1,85 @@
-import {EmployeeNode} from "./EmployeeNode";
-import {Employee} from "../model/Employee";
-import {EmployeeRetriever} from "./EmployeeRetrieve";
 
-// Class to represent the EmployeeTree
+import {employeeData} from "./EmployeeData";
+import {Employee} from "../model/employee";
+
 export class EmployeeTree {
-    private employeeMap: Map<number, EmployeeNode>;
-    private EmployeeRetriever: EmployeeRetriever;
+    employees: Employee[];
 
-    constructor(private listEmployees: Employee[]) {
-        this.employeeMap = new Map();
-        this.EmployeeRetriever = new EmployeeRetriever(listEmployees, this); // Pass 'this' reference
-        this.preorderTraversalBuiltTree();
+    constructor(employees: Employee[]) {
+        this.employees = employees;
     }
 
-    // Traverse and build the employee tree during initialization
-    private preorderTraversalBuiltTree(): void {
-        // Find root employees (those without a manager)
-        const rootEmployees = this.listEmployees.filter(employee => employee.managerId === null);
+    postOrderTraversal(nodeId: number | null, targetName: string | null, managerHierarchy: string[] = []) {
+        // Iterate through each node in the tree structure
+        for (const node of this.employees) {
 
-        // Iterate through root employees to build their respective subtrees
-        for (const rootEmployee of rootEmployees) {
-            // Build the subtree for the current root employee
-            const rootNode = this.preorderTraversalRecursive(rootEmployee);
-            if (rootNode) {
-                // Add the root node to the employeeMap
-                this.employeeMap.set(rootEmployee.id, rootNode);
+            // If the current node is a child of the node with a matching managerId
+            if (node.managerId === nodeId) {
+                // Perform recursion into the branches/children of the current node
+                this.postOrderTraversal(node.id, targetName, [...managerHierarchy, node.name]);
+                // If the name of the current node matches the target being searched for
+                if (node.name === targetName) {
+                    // Store data related to the found target node
+                    this.storeDataForTargetName(node, managerHierarchy);
+                }
+                // Display the name of the current node
+                process.stdout.write(node.name + ",");
+            }
+        }
+
+    }
+
+
+    //At each iteration the data will be processed and entered into the data retrieve
+    storeDataForTargetName(node: Employee, managerHierarchy: string[]) {
+        // Store information about the found employee
+        this.storeEmployeeFound(node);
+        // Store data related to the employee's position in the root hierarchy
+        this.storeRootHierarchyData(node);
+        // Store data related to employees without hierarchy
+        this.storeEmployeedDontHaveHierarchyData(node);
+        // Store the hierarchy of managers from the employee up to the root
+        this.storeManagerUpToRoot(managerHierarchy);
+        // Store the name of the parent employee
+        this.storeParentName(managerHierarchy);
+    }
+
+    // Stores the name of the employee that has been found
+    storeEmployeeFound(node: Employee) {
+        employeeData.employeeFound = node.name;
+    }
+
+    // Stores the name of the employee with root position if their ID is 1
+    storeRootHierarchyData(node: Employee) {
+        if (node.id === 1) {
+            employeeData.employeeWithRootPosition = node.name;
+        }
+    }
+
+    // Stores the name of employees without hierarchy (no manager)
+    storeEmployeedDontHaveHierarchyData(node: Employee) {
+        // Checks if the employee has no manager (managerId is null) and is not the root employee (ID is not 1)
+        if (node.managerId === null && node.id !== 1) {
+            employeeData.employeeDontHaveHierarchy = node.name;
+        }
+    }
+
+    // Stores the hierarchy of managers from the employee up to the root
+    storeManagerUpToRoot(managerHierarchy: string[]) {
+       // Checks if the node has a parent then it will be inserting into storeManagerUpToRoot
+        if (managerHierarchy.length > 0) {
+            // Reverses the managerHierarchy array to store hierarchy from bottom to top
+            for (let i = managerHierarchy.length - 1; i >= 0; i--) {
+                employeeData.storeManagerUpToRoot.push(managerHierarchy[i]);
             }
         }
     }
 
-// Build the employee tree nodes with recursive approach
-    private preorderTraversalRecursive(employee: Employee): EmployeeNode | null {
-        // Create a new EmployeeNode for the current employee
-        const employeeNode = new EmployeeNode(employee);
-
-        // Find all edges ( employees organizational line)
-        const edges = this.listEmployees.filter(e => e.managerId === employee.id);
-
-        // Recursively build subtrees for each direct report
-        for (const directReport of edges) {
-            // Build subtree for the current direct report
-            const childNode = this.preorderTraversalRecursive(directReport);
-            if (childNode) {
-                // Add the child node to the current employee's node
-                employeeNode.addChild(childNode);
-            }
-        }
-
-        // Return the current employee's node (with its subtree)
-        return employeeNode;
-    }
-    // Get siblings of an employee ;)
-    getSiblings(employee: Employee): Employee[] {
-        const managerId = employee.managerId;
-
-        if (managerId === null) {
-            return [];
-        }
-
-        const manager = this.EmployeeRetriever.findEmployeeById(managerId);
-        if (!manager) {
-            return [];
-        }
-
-        return this.listEmployees.filter(e => e.managerId === managerId && e.id !== employee.id);
-    }
-
-    // Get managers up to the root for an employee
-    getParentsUpToRoot(employee: Employee): string[] {
-        const managerNames: string[] = [];
-        let currentEmployee: Employee | null = employee;
-
-        while (currentEmployee !== null && currentEmployee.managerId !== null) {
-            const manager = this.EmployeeRetriever.findEmployeeById(currentEmployee.managerId);
-            if (manager) {
-                managerNames.unshift(manager.name);
-                currentEmployee = manager;
-            } else {
-                currentEmployee = null;
-            }
-        }
-
-        return managerNames.reverse();
-    }
-
-    // Print the entire hierarchy
-    printHierarchy(): void {
-        const rootNodes = this.getRootNodes();
-        for (const rootNode of rootNodes) {
-            this.printSubHierarchy(rootNode, '');
-        }
-    }
-
-    // Recursive helper function to print a hierarchy subtree
-    private printSubHierarchy(node: EmployeeNode, indent: string): void {
-        console.log(`${indent}${node.employee.name}`);
-        for (const childNode of node.children) {
-            this.printSubHierarchy(childNode, `${indent}    `);
-        }
-    }
-
-    // Get root nodes of the employee tree
-    getRootNodes(): EmployeeNode[] {
-        return Array.from(this.employeeMap.values()).filter(node => node.employee.managerId === null);
-    }
-
-    // Get the EmployeeRetriever instance
-    getEmployeeRetriever(): EmployeeRetriever {
-        return this.EmployeeRetriever;
-    }
-
-
-    // Calculate the number of leaf nodes in the tree
-    calculateLeafNodes(node: EmployeeNode | null = null): number {
-        if (node === null) {
-            const rootNodes = this.getRootNodes();
-            return rootNodes.reduce((total, rootNode) => total + this.calculateLeafNodes(rootNode), 0);
-        }
-
-        if (node.children.length === 0) {
-            if (node.employee.id !== 1 && node.employee.managerId !== null) {
-                return 1; // This is a leaf node for the specified conditions
-            }
-            return 0; // This is not a leaf node
-        }
-
-        return node.children.reduce((total, childNode) => total + this.calculateLeafNodes(childNode), 0);
-    }
-
-    // Calculate the maximum depth of the tree
-    calculateMaxTreeDepth(node: EmployeeNode | null = null): number {
-        if (node === null) {
-            const rootNodes = this.getRootNodes();
-            return Math.max(...rootNodes.map(rootNode => this.calculateMaxTreeDepth(rootNode)));
-        }
-
-        if (node.children.length === 0) {
-            return 1;
-        }
-
-        const childrenDepths = node.children.map(childNode => this.calculateMaxTreeDepth(childNode));
-        return 1 + Math.max(...childrenDepths); // Add 1 to include the current node
+    // Stores the name of the parent employee (top manager)
+    storeParentName(managerHierarchy: string[]) {
+        // Gets the name of the parentName from the managerHierarchy
+        const parentName = managerHierarchy[managerHierarchy.length - 1];
+        employeeData.parentsNodeData.push(parentName);
     }
 
 }
